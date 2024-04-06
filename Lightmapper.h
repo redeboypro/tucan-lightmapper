@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <vector>
 #include <cmath>
+#include <algorithm>
+#include <map>
 #include "lodepng.h"
 
 using UC = unsigned char;
@@ -20,10 +22,17 @@ public:
 
 	D64 GetLength() const;
 
-	static D64 Dot(const Vector3D& a, const Vector3D& b);;
-	static Vector3D Normalize(const Vector3D& vector);;
+	static D64 Dot(const Vector3D& a, const Vector3D& b);
+	static Vector3D Normalize(const Vector3D& vector);
 
-	friend Vector3D operator*(const Vector3D& vector, const D64& factor);;
+	Vector3D& operator=(const Vector3D& value);
+
+	friend Vector3D operator-(const Vector3D& value);
+	friend Vector3D operator+(const Vector3D& a, const Vector3D& b);
+	friend Vector3D operator-(const Vector3D& a, const Vector3D& b);
+	friend Vector3D operator*(const Vector3D& vector, const D64& factor);
+
+	constexpr const D64& operator[](size_t index) const;
 };
 
 struct TexCoord
@@ -34,7 +43,13 @@ public:
 	TexCoord();;
 	TexCoord(D64 u, D64 v);;
 
-	friend TexCoord operator+(const TexCoord& a, const TexCoord& b);;
+	bool operator==(const TexCoord& value) const;
+
+	TexCoord& operator=(const TexCoord& value);
+	TexCoord& operator+=(const TexCoord& value);
+
+	friend TexCoord operator+(const TexCoord& a, const TexCoord& b);
+	friend TexCoord operator*(const TexCoord& vector, const D64& factor);
 };
 
 struct Vertex
@@ -56,6 +71,10 @@ public:
 
 struct Triangle
 {
+private:
+	static D64 Min(D64 a, D64 b, D64 c);
+	static D64 Max(D64 a, D64 b, D64 c);
+
 public:
 	const Vertex A, B, C;
 	const TexCoord MinUV, MaxUV;
@@ -75,6 +94,21 @@ private:
 	std::vector<UC> mPixelBuffer;
 	std::vector<Triangle> mTriangles;
 
+	inline U32 U2X(D64 u);
+	inline U32 V2Y(D64 v);
+
+	void ShadeArea(const std::vector<TexCoord>& projectedUV, const Triangle& triangle);
+	bool TryGetProjectedUV(const Triangle& triangleA, const Triangle& triangleB, std::vector<TexCoord>& projectedUV);
+
+	bool PointInsideTexCoordinates(const std::vector<TexCoord>& projectedUV, const TexCoord& point);
+
+	static void SortTexCoordinates(std::vector<TexCoord>& projectedUV);
+	static TexCoord GetTexCoordinatesCentroid(std::vector<TexCoord>& projectedUV);
+
+	static D64 CalculateDirection(const TexCoord& point, const TexCoord& a, const TexCoord& b);
+	static Vector3D CalculateBarycentric(const Vector3D& point, const Triangle& triangle);
+	static TexCoord CalculateUVFromBarycentric(const Vector3D& barycentricCoordinates, const Triangle& triangle);
+
 public:
 	const U32 Width, Height;
 	const D64 AmbientFactor;
@@ -88,6 +122,11 @@ public:
 		D64 bias,
 		const Vector3D& lightDirection);
 
+	~Lightmapper() = default;
+
 	void SetPixel(U32 x, U32 y, D64 r, D64 g, D64 b, D64 a);
+
+	void CalculateDiffuse();
+	void CastShadows();
 };
 
