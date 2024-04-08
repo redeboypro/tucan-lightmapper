@@ -52,3 +52,6 @@ x64/Debug/tucan-li.c611441b.tlog/CL.command.1.tlog
 *.iobj
 *.ilk
 *.log
+/x64
+*.vcxproj
+*.filters
