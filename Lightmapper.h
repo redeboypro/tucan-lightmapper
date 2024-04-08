@@ -43,6 +43,7 @@ public:
 	TexCoord();;
 	TexCoord(D64 u, D64 v);;
 
+	bool operator<(const TexCoord& value) const;
 	bool operator==(const TexCoord& value) const;
 
 	TexCoord& operator=(const TexCoord& value);
@@ -128,5 +129,7 @@ public:
 
 	void CalculateDiffuse();
 	void CastShadows();
+
+	void Encode(const std::string& fileName);
 };
 

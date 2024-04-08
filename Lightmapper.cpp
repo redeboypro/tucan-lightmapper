@@ -81,6 +81,11 @@ TexCoord::TexCoord() : U(0.0), V(0.0) {}
 
 TexCoord::TexCoord(D64 u, D64 v) : U(u), V(v) {}
 
+bool TexCoord::operator<(const TexCoord& value) const
+{
+	return (U != value.U) ? (U < value.U) : (V < value.V);
+}
+
 bool TexCoord::operator==(const TexCoord& value) const
 {
 	return U == value.U && V == value.V;
@@ -117,7 +122,7 @@ void Lightmapper::SetPixel(U32 x, U32 y, D64 r, D64 g, D64 b, D64 a)
 {
 	if (x < Width && y < Height)
 	{
-		U32 index = (x + y * Width) * 4;
+		U32 index = (x + (Height - y) * Width) * 4;
 
 		mPixelBuffer[index] = static_cast<UC>(r * 255);
 		mPixelBuffer[index + 1] = static_cast<UC>(g * 255);
@@ -137,7 +142,7 @@ void Lightmapper::CalculateDiffuse()
 
 				if (PointInsideTexCoordinates(triangle.TexCoordinates, pixelUV))
 				{
-					D64 diffuse = std::max(Vector3D::Dot(triangle.A.Normal, -LightDirection), 0.0) + AmbientFactor;
+					D64 diffuse = std::clamp(std::max(Vector3D::Dot(triangle.A.Normal, -LightDirection), 0.0) + AmbientFactor, 0.0, 1.0);
 					SetPixel(x, y, diffuse, diffuse, diffuse, 1.0f);
 				}
 			}
@@ -162,7 +167,12 @@ void Lightmapper::CastShadows()
 		}
 }
 
-Vertex::Vertex(const Vector3D& origin, const Vector3D& normal, const TexCoord& uv) {}
+void Lightmapper::Encode(const std::string& fileName)
+{
+	lodepng::encode(fileName, mPixelBuffer, Width, Height);
+}
+
+Vertex::Vertex(const Vector3D& origin, const Vector3D& normal, const TexCoord& uv) : Origin(origin), Normal(normal), UV(uv) {}
 
 D64 Triangle::Min(D64 a, D64 b, D64 c)
 {
@@ -212,8 +222,8 @@ void Lightmapper::ShadeArea(const std::vector<TexCoord>& projectedUV, const Tria
 	U32 maxX = U2X(triangle.MaxUV.U);
 	U32 maxY = V2Y(triangle.MaxUV.V);
 
-	for (U32 y = minY; y < maxY; y++)
-		for (U32 x = minX; x < maxX; x++)
+	for (U32 y = minY; y <= maxY; y++)
+		for (U32 x = minX; x <= maxX; x++)
 		{
 			TexCoord pixelUV = TexCoord(static_cast<D64>(x) / Width, static_cast<D64>(y) / Height);
 
@@ -290,7 +300,7 @@ bool Lightmapper::TryGetProjectedUV(const Triangle& triangleA, const Triangle& t
 
 bool Lightmapper::PointInsideTexCoordinates(const std::vector<TexCoord>& projectedUV, const TexCoord& point)
 {
-	bool hasPositive, hasNegative;
+	bool hasPositive = false, hasNegative = false;
 	const size_t count = projectedUV.size();
 
 	for (size_t i = 0; i < count; i++)
