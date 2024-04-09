@@ -112,7 +112,7 @@ Lightmapper::Lightmapper(
 	D64 bias,
 	const Vector3D& lightDirection) :
 	mTriangles(triangles),
-	mPixelBuffer(width * width * 4, 255),
+	mPixelBuffer(width * height * 4, 255),
 	Width(width), Height(height),
 	AmbientFactor(ambientFactor),
 	Bias(bias),
@@ -122,7 +122,7 @@ void Lightmapper::SetPixel(U32 x, U32 y, D64 r, D64 g, D64 b, D64 a)
 {
 	if (x < Width && y < Height)
 	{
-		U32 index = (x + (Height - y) * Width) * 4;
+		U32 index = (x + (Height - y - 1) * Width) * 4;
 
 		mPixelBuffer[index] = static_cast<UC>(r * 255);
 		mPixelBuffer[index + 1] = static_cast<UC>(g * 255);

@@ -5,10 +5,20 @@
 #include "Lightmapper.h"
 #include "tucan-lightmapper.h"
 
-int main(const int argc, const char* argv[])
+int main()
 {
-	auto mesh = loadObj(std::string(argv[1]));
-	Lightmapper* lightmapper = new Lightmapper(mesh, 256, 256, 0.25, 0, Vector3D::Normalize(Vector3D(2, -5, -3)));
+    std::string modelFileName;
+    std::string textureFileName;
+    std::string width;
+    std::string height;
+
+    std::cin >> modelFileName;
+    std::cin >> textureFileName;
+    std::cin >> width;
+    std::cin >> height;
+
+	auto mesh = loadObj(modelFileName);
+	Lightmapper* lightmapper = new Lightmapper(mesh, std::stoi(width), std::stoi(height), 0.25, 0, Vector3D::Normalize(Vector3D(2, -5, -3)));
     
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -16,10 +26,11 @@ int main(const int argc, const char* argv[])
     lightmapper->CastShadows();
 
     auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
-    std::cout << "Complete in " << duration.count() << " seconds!" << std::endl;
 
-	lightmapper->Encode(std::string(argv[2]));
+    std::chrono::duration<D64> duration = end - start;
+    std::cout << duration.count() << " seconds" << std::endl;
+
+	lightmapper->Encode(textureFileName);
 	delete lightmapper;
 }
 
